@@ -82,10 +82,14 @@ US1Y = read.csv("data/DTB1YR.csv") %>% na_if(".") %>% rename(Date = DATE, US1Y =
 # GOLD-USD
 GLD = read.csv("data/Gold Futures Historical Data.csv")  %>% 
   dplyr::mutate(Date = as.Date(Date), Price = as.numeric(gsub(',', '', Price))) %>%
-  rename(GLD = Price) %>% select(c(GLD, Date))
+  rename(GLD = Price) %>% select(c(GLD, Date)) 
+
+# 5Y5Y
+FYFY = read.csv("data/T5YIFR.csv") %>% na_if(".") %>% rename(Date = DATE, FYFY = T5YIFR)  %>% 
+  dplyr::mutate(Date = as.Date(Date), US1Y = as.numeric(FYFY))
 
 # All Series Merged
-Series.Merged  = list(BTC, SP500, FTSE, US13W, VIX, DPI, WTI, D.JON.RE, US1Y, GLD) %>% reduce(full_join, by='Date')
+Series.Merged  = list(BTC, SP500, FTSE, US13W, VIX, DPI, WTI, D.JON.RE, US1Y, GLD, FYFY) %>% reduce(full_join, by='Date')
 
 write.csv(Series.Merged, file = "data/Series Merged.csv")
 ```
