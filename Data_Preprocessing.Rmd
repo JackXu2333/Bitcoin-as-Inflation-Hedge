@@ -1,0 +1,113 @@
+---
+title: "Data_Preprocessing"
+author: "Sijie Xu"
+date: "2022-11-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(rugarch)
+library(dplyr)
+library(FinTS)
+library(quantmod)
+library(ggplot2)
+library(tseries)
+library(PerformanceAnalytics)
+library(tidyverse)
+
+# BTC-USD Price
+BTC = get.hist.quote(instrument="BTC-USD", start="2014-09-17", 
+                      end="2022-11-23",
+                      provider="yahoo", 
+                      compression="d", retclass="zoo") %>% 
+  as.data.frame() %>% add_rownames(var = "Date") %>% 
+  mutate(BTC.Ret = (Close - Open) / Open, BTC = Close, Date = as.Date(Date)) %>%
+  select(c(Date, BTC.Ret, BTC))
+  
+
+# US Stock Market Index
+SP500 = get.hist.quote(instrument="^GSPC", start="2014-09-17", 
+                      end="2022-11-23",
+                      provider="yahoo", 
+                      compression="d", retclass="zoo") %>% 
+  as.data.frame() %>% add_rownames(var = "Date") %>% 
+  mutate(SP500.Ret = (Close - Open) / Open, SP500 = Close, Date = as.Date(Date)) %>%
+  select(c(Date, SP500.Ret, SP500))
+
+# UK Stock Market Index
+FTSE = get.hist.quote(instrument="^FTSE", start="2014-09-17", 
+                      end="2022-11-23", 
+                      provider="yahoo", 
+                      compression="d", retclass="zoo") %>% 
+  as.data.frame() %>% add_rownames(var = "Date") %>% 
+  mutate(FTSE.Ret = (Close - Open) / Open, FTSE = Close, Date = as.Date(Date)) %>%
+  select(c(Date, FTSE.Ret, FTSE))
+
+# US 3 Month Treasury Bound Rate
+US13W = get.hist.quote(instrument="^IRX", start="2014-09-17", 
+                      end="2022-11-23", 
+                      provider="yahoo", 
+                      compression="d", retclass="zoo") %>% 
+  as.data.frame() %>% add_rownames(var = "Date") %>% 
+  mutate(US13W.Ret = (Close - Open) / Open, US13W = Close, Date = as.Date(Date)) %>%
+  select(c(Date, US13W.Ret, US13W))
+
+# Volatility Index
+VIX = get.hist.quote(instrument="^VIX", start="2014-09-17", 
+                      end="2022-11-23", 
+                      provider="yahoo", 
+                      compression="d", retclass="zoo") %>% 
+  as.data.frame() %>% add_rownames(var = "Date") %>% 
+  mutate(VIX.Ret = (Close - Open) / Open, VIX = Close, Date = as.Date(Date)) %>%
+  select(c(Date, VIX.Ret, VIX))
+
+# Policy News Index Daily
+DPI = read.csv("data/All_Daily_Policy_Data.csv") %>% 
+  dplyr::mutate(Date = as.Date(paste(year, month, day, sep = "-")), daily_policy_index = as.numeric(daily_policy_index)) %>% 
+  rename(DPI = daily_policy_index) %>% select(c(DPI, Date)) 
+
+# Oil Index
+WTI = read.csv("data/DCOILWTICO.csv") %>% na_if(".") %>% rename(Date = DATE, WTI = DCOILWTICO) %>% 
+  dplyr::mutate(Date = as.Date(Date), WTI = as.numeric(WTI))
+
+# Real Estate Index
+D.JON.RE = read.csv("data/Dow Jones Real Estate Historical Data.csv") %>% 
+  dplyr::mutate(Date = as.Date(Date, "%m/%d/%Y"), Price = as.numeric(gsub(',', '', Price))) %>%
+  rename(D.JONES.RE = Price) %>% select(c(D.JONES.RE, Date))
+
+# US 1 Year Treasury Bound Rate
+US1Y = read.csv("data/DTB1YR.csv") %>% na_if(".") %>% rename(Date = DATE, US1Y = DTB1YR)  %>% 
+  dplyr::mutate(Date = as.Date(Date), US1Y = as.numeric(US1Y))
+
+# GOLD-USD
+GLD = read.csv("data/Gold Futures Historical Data.csv")  %>% 
+  dplyr::mutate(Date = as.Date(Date), Price = as.numeric(gsub(',', '', Price))) %>%
+  rename(GLD = Price) %>% select(c(GLD, Date))
+
+# All Series Merged
+Series.Merged  = list(BTC, SP500, FTSE, US13W, VIX, DPI, WTI, D.JON.RE, US1Y, GLD) %>% reduce(full_join, by='Date')
+
+write.csv(Series.Merged, file = "data/Series Merged.csv")
+```
+
+## R Markdown
+
+https://www.policyuncertainty.com/us_monthly.html
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
