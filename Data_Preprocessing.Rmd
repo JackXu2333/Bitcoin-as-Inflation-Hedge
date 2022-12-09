@@ -14,15 +14,19 @@ library(ggplot2)
 library(tseries)
 library(PerformanceAnalytics)
 library(tidyverse)
+```
 
+## Data Cleaning
+
+```{r}
 # BTC-USD Price
 BTC = get.hist.quote(instrument="BTC-USD", start="2014-09-17", 
                       end="2022-11-23",
                       provider="yahoo", 
                       compression="d", retclass="zoo") %>% 
   as.data.frame() %>% add_rownames(var = "Date") %>% 
-  mutate(BTC.Ret = (Close - Open) / Open, BTC = Close, Date = as.Date(Date)) %>%
-  select(c(Date, BTC.Ret, BTC))
+  dplyr::mutate(BTC.Ret = (Close - Open) / Open, BTC = Close, Date = as.Date(Date)) %>%
+  dplyr::select(c(Date, BTC.Ret, BTC))
   
 
 # US Stock Market Index
@@ -31,8 +35,8 @@ SP500 = get.hist.quote(instrument="^GSPC", start="2014-09-17",
                       provider="yahoo", 
                       compression="d", retclass="zoo") %>% 
   as.data.frame() %>% add_rownames(var = "Date") %>% 
-  mutate(SP500.Ret = (Close - Open) / Open, SP500 = Close, Date = as.Date(Date)) %>%
-  select(c(Date, SP500.Ret, SP500))
+  dplyr::mutate(SP500.Ret = (Close - Open) / Open, SP500 = Close, Date = as.Date(Date)) %>%
+  dplyr::select(c(Date, SP500.Ret, SP500))
 
 # UK Stock Market Index
 FTSE = get.hist.quote(instrument="^FTSE", start="2014-09-17", 
@@ -40,8 +44,8 @@ FTSE = get.hist.quote(instrument="^FTSE", start="2014-09-17",
                       provider="yahoo", 
                       compression="d", retclass="zoo") %>% 
   as.data.frame() %>% add_rownames(var = "Date") %>% 
-  mutate(FTSE.Ret = (Close - Open) / Open, FTSE = Close, Date = as.Date(Date)) %>%
-  select(c(Date, FTSE.Ret, FTSE))
+  dplyr::mutate(FTSE.Ret = (Close - Open) / Open, FTSE = Close, Date = as.Date(Date)) %>%
+  dplyr::select(c(Date, FTSE.Ret, FTSE))
 
 # US 3 Month Treasury Bound Rate
 US13W = get.hist.quote(instrument="^IRX", start="2014-09-17", 
@@ -49,8 +53,8 @@ US13W = get.hist.quote(instrument="^IRX", start="2014-09-17",
                       provider="yahoo", 
                       compression="d", retclass="zoo") %>% 
   as.data.frame() %>% add_rownames(var = "Date") %>% 
-  mutate(US13W.Ret = (Close - Open) / Open, US13W = Close, Date = as.Date(Date)) %>%
-  select(c(Date, US13W.Ret, US13W))
+  dplyr::mutate(US13W.Ret = (Close - Open) / Open, US13W = Close, Date = as.Date(Date)) %>%
+  dplyr::select(c(Date, US13W.Ret, US13W))
 
 # Volatility Index
 VIX = get.hist.quote(instrument="^VIX", start="2014-09-17", 
@@ -58,13 +62,13 @@ VIX = get.hist.quote(instrument="^VIX", start="2014-09-17",
                       provider="yahoo", 
                       compression="d", retclass="zoo") %>% 
   as.data.frame() %>% add_rownames(var = "Date") %>% 
-  mutate(VIX.Ret = (Close - Open) / Open, VIX = Close, Date = as.Date(Date)) %>%
-  select(c(Date, VIX.Ret, VIX))
+  dplyr::mutate(VIX.Ret = (Close - Open) / Open, VIX = Close, Date = as.Date(Date)) %>%
+  dplyr::select(c(Date, VIX.Ret, VIX))
 
 # Policy News Index Daily
 DPI = read.csv("data/All_Daily_Policy_Data.csv") %>% 
   dplyr::mutate(Date = as.Date(paste(year, month, day, sep = "-")), daily_policy_index = as.numeric(daily_policy_index)) %>% 
-  rename(DPI = daily_policy_index) %>% select(c(DPI, Date)) 
+  rename(DPI = daily_policy_index) %>% dplyr::select(c(DPI, Date)) 
 
 # Oil Index
 WTI = read.csv("data/DCOILWTICO.csv") %>% na_if(".") %>% rename(Date = DATE, WTI = DCOILWTICO) %>% 
@@ -73,7 +77,7 @@ WTI = read.csv("data/DCOILWTICO.csv") %>% na_if(".") %>% rename(Date = DATE, WTI
 # Real Estate Index
 D.JON.RE = read.csv("data/Dow Jones Real Estate Historical Data.csv") %>% 
   dplyr::mutate(Date = as.Date(Date, "%m/%d/%Y"), Price = as.numeric(gsub(',', '', Price))) %>%
-  rename(D.JONES.RE = Price) %>% select(c(D.JONES.RE, Date))
+  rename(D.JONES.RE = Price) %>% dplyr::select(c(D.JONES.RE, Date))
 
 # US 1 Year Treasury Bound Rate
 US1Y = read.csv("data/DTB1YR.csv") %>% na_if(".") %>% rename(Date = DATE, US1Y = DTB1YR)  %>% 
@@ -82,11 +86,11 @@ US1Y = read.csv("data/DTB1YR.csv") %>% na_if(".") %>% rename(Date = DATE, US1Y =
 # GOLD-USD
 GLD = read.csv("data/Gold Futures Historical Data.csv")  %>% 
   dplyr::mutate(Date = as.Date(Date), Price = as.numeric(gsub(',', '', Price))) %>%
-  rename(GLD = Price) %>% select(c(GLD, Date)) 
+  rename(GLD = Price) %>% dplyr::select(c(GLD, Date)) 
 
 # 5Y5Y
 FYFY = read.csv("data/T5YIFR.csv") %>% na_if(".") %>% rename(Date = DATE, FYFY = T5YIFR)  %>% 
-  dplyr::mutate(Date = as.Date(Date), US1Y = as.numeric(FYFY))
+  dplyr::mutate(Date = as.Date(Date), FYFY = as.numeric(FYFY))
 
 # All Series Merged
 Series.Merged  = list(BTC, SP500, FTSE, US13W, VIX, DPI, WTI, D.JON.RE, US1Y, GLD, FYFY) %>% reduce(full_join, by='Date')
@@ -94,24 +98,126 @@ Series.Merged  = list(BTC, SP500, FTSE, US13W, VIX, DPI, WTI, D.JON.RE, US1Y, GL
 write.csv(Series.Merged, file = "data/Series Merged.csv")
 ```
 
-## R Markdown
+## Pre Analysis
 
-https://www.policyuncertainty.com/us_monthly.html
+```{r vars}
+library(vars)
+library(zoo)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+data_series <- read.csv("data/Series Merged.csv") %>% dplyr::mutate(Date = as.Date(Date)) %>% na.omit()
+data_series_zoo <- zoo(data_series[,3:ncol(data_series)], as.Date(data_series$Date))
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+plot.zoo(data_series_zoo, main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+### Box-Test (ARMA)
+```{r box}
+for (i in 1:ncol(data_series_zoo)){
+  print(Box.test(data_series_zoo[,i], type="Ljung-Box", lag=12))
+}
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### LM Test (Arch Effect)
+
+```{r arch}
+for (i in 1:ncol(data_series_zoo)){
+  print(ArchTest(data_series_zoo[,i], lag=12))
+}
+```
+
+### Dickey-Fuller test (Unit Disk)
+
+```{r dftest}
+for (i in 1:ncol(data_series_zoo)){
+  print(ur.df(data_series_zoo[,i], type = "trend", selectlags = "AIC"))
+}
+```
+
+## Model 1 VAR 
+
+```{r var}
+data_series_whole <- data_series_zoo[,c("FYFY", "BTC.Ret", "SP500.Ret", "FTSE.Ret", "US13W.Ret", "VIX.Ret", "DPI", "WTI", "D.JONES.RE", "US1Y", "GLD")]
+
+# Lag select
+max_lag <- VARselect(data_series_whole, lag.max = 12, type = "const")
+max_lag$selection
+
+# Model estimation 
+var.model <- VAR(data_series_whole, p = 8, type = "const", season = NULL, exog = NULL)
+summary(var.model)
+```
+
+```{r multivarile_garch_GO}
+library(rmgarch)
+
+cl = makePSOCKcluster(10)
+X = as.xts(data_series_whole)
+spec = gogarchspec(mean.model = list(model = 'AR', lag = 8), variance.model = list(model = 'sGARCH', variance.targeting = TRUE), distribution = 'manig')
+mod = gogarchfit(spec, X, gfun = 'tanh', out.sample = 10, cluster = cl, maxiter1 = 1e+05, epsilon = 1e-07, rseed = 77)
+
+betaC = betacovar(mod, weights = rep(1/11, 11), asset = 1)
+betaS = betacoskew(mod, weights = rep(1/11, 11), asset = 1, cluster = cl)
+betaK = betacokurt(mod, weights = rep(1/11, 11), asset = 1, cluster = cl)
+
+stopCluster(cl)
+
+mod
+```
+
+```{r multivarile_garch_C}
+varx.model = varxfit(data_series_whole, p = 8, constant = TRUE, exogen = NULL)
+cl = makePSOCKcluster(10)
+uspec = ugarchspec(mean.model = list(armaOrder = c(2,1)),
+		variance.model = list(garchOrder = c(1,1), model = "sGARCH", variance.targeting=FALSE),
+	distribution.model = "norm")
+multi_uspec = multispec(replicate(11,uspec))
+spec = cgarchspec(multi_uspec, VAR=TRUE, lag = 8, distribution = list(copula = 'mvnorm'))
+mod = cgarchfit(spec, X, cluster = cl, out.sample = 8, maxiter1 = 1e+05, epsilon = 1e-07, rseed = 77)
+
+stopCluster(cl)
+
+mod@model$maxgarchOrder
+```
+
+
+``
+
+```{r multivarile_garch_dcc}
+cl = makePSOCKcluster(10)
+uspec = ugarchspec(mean.model = list(armaOrder = c(1,1)), variance.model = list(model = 'sGARCH', garchOrder = c(1,1)))
+multi_uspec = multispec(replicate(11,uspec))
+spec = dccspec(multi_uspec, VAR=TRUE, distribution = 'mvnorm')
+mod = dccfit(spec, X, cluster = cl, maxiter1 = 1e+05, epsilon = 1e-07, rseed = 77)
+
+stopCluster(cl)
+
+mod
+```
+
+```{r}
+data(dji30retw)
+Dat = dji30retw[, 1:3, drop = FALSE]
+
+# DCC timecopula MVN (check against DCC-NORM)--> They should be the same
+uspec = ugarchspec(mean.model = list(armaOrder = c(2,1)),
+		variance.model = list(garchOrder = c(1,1), model = "sGARCH", variance.targeting=FALSE),
+	distribution.model = "norm")
+spec1 = cgarchspec(uspec = multispec( replicate(3, uspec) ), asymmetric = TRUE,
+		distribution.model = list(copula = "mvnorm", method = "Kendall",
+				time.varying = TRUE, transformation = "parametric"))
+
+cl = makePSOCKcluster(10)
+fit1 = cgarchfit(spec1, data = Dat, cluster = cl, VAR=TRUE, solver.control=list(trace=1))
+
+# Create and Check the Filter method
+specx1 = spec1
+for(i in 1:3) specx1@umodel$fixed.pars[[i]] = as.list(fit1@model$mpars[fit1@model$midx[,i]==1,i])
+setfixed(specx1)<-as.list(fit1@model$mpars[fit1@model$midx[,4]==1,4])
+filt1 = cgarchfilter(specx1, data = Dat, cluster = cl)
+
+options(width = 120)
+stopCluster(cl)
+```
+
