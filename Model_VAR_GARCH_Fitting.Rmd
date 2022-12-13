@@ -1,0 +1,212 @@
+---
+title: "Model_Fitting"
+author: "Sijie Xu"
+date: "2022-12-13"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(rugarch)
+library(dplyr)
+library(FinTS)
+library(quantmod)
+library(ggplot2)
+library(tseries)
+library(PerformanceAnalytics)
+library(tidyverse)
+library(vars)
+library(zoo)
+library(rmgarch)
+
+data_series <- read.csv("data/Series Merged.csv") %>% dplyr::mutate(Date = as.Date(Date)) %>% na.omit()
+data_series_zoo <- zoo(data_series[,3:ncol(data_series)], as.Date(data_series$Date))
+data_series_xts <- data_series_zoo[,c("FYFY", "BTC.Ret")] %>% as.xts()
+
+max_lag <- VARselect(data_series_xts, lag.max = 12, type = "const")
+max_lag$selection
+```
+
+
+## Model 2 VAR-GARCH Normal
+
+```{r multivarile_garch_C}
+
+varx.model = varxfit(data_series_xts, p = 5, constant = TRUE, exogen = NULL)
+
+cl = makePSOCKcluster(10)
+
+uspec = ugarchspec(
+  mean.model = list(armaOrder = c(1,1)),
+  variance.model = list(garchOrder = c(1,1), model = "sGARCH", variance.targeting=FALSE),
+  distribution.model = "norm")
+
+spec = cgarchspec(multispec(replicate(ncol(data_series_xts),uspec)), 
+                  VAR = TRUE, lag = 5, distribution = list(copula = 'mvnorm'))
+
+mod = cgarchfit(spec, data_series_xts, cluster = cl, var.fit = varx.model, 
+                out.sample = 5, maxiter1 = 1e+04, epsilon = 1e-07, rseed = 66)
+
+stopCluster(cl)
+
+mod
+```
+
+# Model Testing 
+
+```{r}
+plot.zoo(data_series_xts, main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
+
+plot.zoo(residuals(mod), main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
+```
+## Model 2 ARCH-GARCH SSTD
+
+```{r multivarile_garch_C_SSTD}
+
+cl = makePSOCKcluster(10)
+
+uspec = ugarchspec(
+  mean.model = list(armaOrder = c(1,1)),
+  variance.model = list(garchOrder = c(1,1), model = "sGARCH", variance.targeting=FALSE),
+  distribution.model = "sstd")
+
+spec = cgarchspec(multispec(replicate(ncol(data_series_xts),uspec)), 
+                  VAR = TRUE, lag = 5, distribution = list(copula = 'mvnorm'))
+
+mod_sstd = cgarchfit(spec, data_series_xts, cluster = cl, var.fit = varx.model, 
+                out.sample = 5, maxiter1 = 1e+04, epsilon = 1e-07, rseed = 66)
+
+stopCluster(cl)
+
+mod_sstd
+```
+
+```{r}
+plot.zoo(residuals(mod_sstd), main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
+```
+
+
+```{r APAGARCH}
+cl = makePSOCKcluster(10)
+
+uspec = ugarchspec(variance.model = list(model="apARCH", 
+      garchOrder=c(1,1)), mean.model=list(armaOrder=c(0, 0)),
+      fixed.pars=list(delta=2), distribution.model = "sstd")
+
+spec = cgarchspec(multispec(replicate(ncol(data_series_xts),uspec)), 
+                  VAR = TRUE, lag = 5, distribution = list(copula = 'mvnorm'))
+
+mod_APAGARCH_sstd = cgarchfit(spec, data_series_xts, cluster = cl, var.fit = varx.model, 
+                out.sample = 5, maxiter1 = 1e+04, epsilon = 1e-07, rseed = 66)
+
+stopCluster(cl)
+
+mod_APAGARCH_sstd
+plot.zoo(residuals(mod_APAGARCH_sstd), main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
+```
+
+### Pre/Post Covid Analysis
+
+```{r split}
+
+# US Declares Public Health Emergency
+nsplit = which(index(data_series_xts) == "2020-02-03")
+nend = which(index(data_series_xts) == max(index(data_series_xts)))
+
+data.pre = data_series_xts[1:nsplit]
+data.post = data_series_xts[(nsplit+1):nend]
+
+length(index(data.pre))
+length(index(data.post))
+
+```
+
+```{r pre}
+
+max_lag <- VARselect(data.pre, lag.max = 12, type = "const")
+lag <- max_lag$selection[1]
+
+varx.model.pre = varxfit(data_series_xts, p = lag, constant = TRUE, exogen = NULL)
+
+cl = makePSOCKcluster(10)
+
+uspec = ugarchspec(
+  mean.model = list(armaOrder = c(1,1)),
+  variance.model = list(garchOrder = c(1,1), model = "sGARCH", variance.targeting=FALSE),
+  distribution.model = "sstd")
+
+spec = cgarchspec(multispec(replicate(ncol(data.pre),uspec)), 
+                  VAR = TRUE, lag = lag, distribution = list(copula = 'mvnorm'))
+
+mod_sstd_pre = cgarchfit(spec, data.pre, cluster = cl, var.fit = varx.model.pre, 
+                out.sample = lag, maxiter1 = 1e+05, epsilon = 1e-07, rseed = 66)
+
+stopCluster(cl)
+
+mod_sstd_pre
+varx.model.pre$Bcoef
+
+plot.zoo(residuals(mod_sstd_pre), main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
+```
+
+```{r post}
+
+max_lag <- VARselect(data.post, lag.max = 12, type = "const")
+lag <- max_lag$selection[1]
+
+varx.model.post = varxfit(data_series_xts, p = lag, constant = TRUE, exogen = NULL)
+
+cl = makePSOCKcluster(10)
+
+uspec = ugarchspec(
+  mean.model = list(armaOrder = c(1,1)),
+  variance.model = list(garchOrder = c(1,1), model = "sGARCH", variance.targeting=FALSE),
+  distribution.model = "sstd")
+
+spec = cgarchspec(multispec(replicate(ncol(data.post),uspec)), 
+                  VAR = TRUE, lag = lag, distribution = list(copula = 'mvnorm'))
+
+mod_sstd_post = cgarchfit(spec, data.post, cluster = cl, var.fit = varx.model.post, 
+                out.sample = lag, maxiter1 = 1e+05, epsilon = 1e-07, rseed = 100)
+
+stopCluster(cl)
+
+mod_sstd_post
+varx.model.post$Bcoef
+
+plot.zoo(residuals(mod_sstd_post), main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
+```
+
+```{r}
+for (i in 1:ncol(residuals(mod_sstd))){
+  print(ArchTest(residuals(mod_sstd)[,i], lag=12))
+}
+
+for (i in 1:ncol(residuals(mod_sstd_pre))){
+  print(ArchTest(residuals(mod_sstd_pre)[,i], lag=12))
+}
+
+for (i in 1:ncol(residuals(mod_sstd_post))){
+  print(ArchTest(residuals(mod_sstd_post)[,i], lag=12))
+}
+```
+
+```{r}
+for (i in 1:ncol(residuals(mod_sstd))){
+  print(Box.test(residuals(mod_sstd)[,i], type="Ljung-Box", lag=12))
+}
+
+for (i in 1:ncol(residuals(mod_sstd_post))){
+  print(Box.test(residuals(mod_sstd_post)[,i], type="Ljung-Box", lag=12))
+}
+
+for (i in 1:ncol(residuals(mod_sstd_pre))){
+  print(Box.test(residuals(mod_sstd_pre)[,i], type="Ljung-Box", lag=12))
+}
+```
+

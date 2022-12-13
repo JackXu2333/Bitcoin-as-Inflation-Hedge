@@ -1,0 +1,92 @@
+---
+title: "Model_VAR_Fitting"
+author: "Sijie Xu"
+date: "2022-12-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(rugarch)
+library(dplyr)
+library(FinTS)
+library(quantmod)
+library(ggplot2)
+library(tseries)
+library(PerformanceAnalytics)
+library(tidyverse)
+library(vars)
+library(zoo)
+
+data_series <- read.csv("data/Series Merged.csv") %>% dplyr::mutate(Date = as.Date(Date)) %>% na.omit()
+data_series_zoo <- zoo(data_series[,3:ncol(data_series)], as.Date(data_series$Date))
+```
+
+
+## Model 1 VAR 
+
+```{r var}
+data_series_whole <- data_series_zoo[,c("FYFY", "BTC.Ret", "SP500.Ret", "FTSE.Ret", "US13W.Ret", "VIX.Ret", "DPI", "WTI", "D.JONES.RE", "US1Y", "GLD")]
+
+# Lag select
+max_lag <- VARselect(data_series_whole, lag.max = 12, type = "const")
+max_lag$selection
+
+# Model estimation 
+var.model <- VAR(data_series_whole, p = 8, type = "const", season = NULL, exog = NULL)
+summary(var.model)
+```
+
+### Model 1 Testing 
+
+```{r serial.test}
+var_serial <- serial.test(var.model, lags.pt = 12, type = "PT.asymptotic")
+for (i in 1:ncol(data_series_whole)){
+  name = colnames(data_series_whole)[i]
+  plot(var_serial, names = name)
+}
+var_serial
+```
+
+
+```{r arch_test}
+var.arch <- arch.test(var.model, lags.multi = 12, multivariate.only = TRUE)
+var.arch
+```
+
+
+```{r normal}
+var.norm <- normality.test(var.model, multivariate.only = TRUE)
+var.norm
+```
+
+### Causality test
+
+```{r cau}
+var.cause.btc <- causality(var.model, cause = "BTC.Ret")
+var.cause.btc
+```
+
+To generate impulse response functions to describe the response of btc to an fyfy shock, we proceed as follows:
+
+```{r IRF_FYFY}
+irf.FYFY <- irf(var.model, impulse = "FYFY", response = "BTC.Ret", 
+    n.ahead = 40, boot = TRUE)
+plot(irf.FYFY, ylab = "ouput", main = "Shock from FYFY")
+```
+
+```{r IRF_BTC}
+irf.BTC <- irf(var.model, response = "FYFY", impulse = "BTC.Ret", 
+    n.ahead = 40, boot = TRUE)
+plot(irf.BTC, ylab = "ouput", main = "Shock from BTC.Ret")
+```
+
+```{r residual}
+plot.zoo(residuals(var.model), main="MSFT Gates", col="blue", 
+         cex.lab=2.5, xlab="Time")
+```
+
+
+```{r fevd}
+var.vardec <- fevd(var.model, n.ahead = 2)
+plot(var.vardec)
+```
