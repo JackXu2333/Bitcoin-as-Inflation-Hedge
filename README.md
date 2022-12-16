@@ -1,6 +1,6 @@
 # Re-evaluation of Bitcoin’s Potential as an Inflation Hedge
 
-By Meng Wu (m59wu) & Sijie Xu (s362xu). Link
+By Meng Wu (m59wu) & Sijie Xu (s362xu) for STAT974 term paper. Last updated Dec. 2022. 
 
 ### Introduction
 
@@ -46,6 +46,9 @@ The VAR model mentioned in phase 1 of the study can be found via [Model_VAR_Fitt
 The GARCH-VAR model mentioned in phase 2 and 3 of the study can be found via [Model_VAR_GARCH_Fitting.Rmd](Model_VAR_GARCH_Fitting.Rmd).
 The model reguliaized VAR model mentioned in phase 4 of the study can be found via [Model_Regularized_VAR.rmd](Model_Regularized_VAR.rmd).
 
+### Links
+
+Please refer to our [paper](STAT974_Term_Paper.pdf) for more detail.
 
 > *Re-evaluation of Bitcoin’s Potential as an Inflation Hedge (2022) (c) by Meng Wu & Sijie Xu* *Re-evaluation of Bitcoin’s Potential as an Inflation Hedge
 > (2022) is licensed under a Creative Commons Attribution

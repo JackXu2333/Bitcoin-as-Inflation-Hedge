@@ -17,8 +17,6 @@ library(tidyverse)
 library(vars)
 library(zoo)
 library(rmgarch)
-library(QuantPsyc)
-library(MTS)
 
 data_series <- read.csv("data/Series Merged.csv") %>% dplyr::mutate(Date = as.Date(Date)) %>% na.omit()
 data_series_zoo <- zoo(data_series[,3:ncol(data_series)], as.Date(data_series$Date))
