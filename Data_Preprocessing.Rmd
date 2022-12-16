@@ -107,13 +107,15 @@ library(zoo)
 data_series <- read.csv("data/Series Merged.csv") %>% dplyr::mutate(Date = as.Date(Date)) %>% na.omit()
 data_series_zoo <- zoo(data_series[,3:ncol(data_series)], as.Date(data_series$Date))
 
-plot.zoo(data_series_zoo, main="MSFT Gates", col="blue", 
-         cex.lab=2.5, xlab="Time")
+png(filename="All Series.PNG", width = 1000, height = 600)
+plot.zoo(data_series_zoo[,c( "BTC.Ret", "SP500.Ret", "FYFY", "WTI", "D.JONES.RE", "FTSE.Ret", "US13W.Ret", "VIX", "US1Y", "GLD", "DPI")], main="Combined Series Summary", col="blue", cex.lab=2.5, xlab="Time")
+dev.off()
 ```
 
 ### Box-Test (ARMA)
 ```{r box}
 for (i in 1:ncol(data_series_zoo)){
+  print(colnames(data_series_zoo)[i])
   print(Box.test(data_series_zoo[,i], type="Ljung-Box", lag=12))
 }
 ```
@@ -122,6 +124,7 @@ for (i in 1:ncol(data_series_zoo)){
 
 ```{r arch}
 for (i in 1:ncol(data_series_zoo)){
+  print(colnames(data_series_zoo)[i])
   print(ArchTest(data_series_zoo[,i], lag=12))
 }
 ```
@@ -130,7 +133,8 @@ for (i in 1:ncol(data_series_zoo)){
 
 ```{r dftest}
 for (i in 1:ncol(data_series_zoo)){
-  print(ur.df(data_series_zoo[,i], type = "trend", selectlags = "AIC"))
+  print(colnames(data_series_zoo)[i])
+  print(adf.test(data_series_zoo[,i]))
 }
 ```
 
