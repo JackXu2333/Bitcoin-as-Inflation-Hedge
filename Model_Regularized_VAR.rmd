@@ -1,0 +1,79 @@
+---
+title: "VAR on all series"
+author: "Meng Wu"
+date: "14/12/2022"
+output: pdf_document
+---
+
+
+```{r}
+
+library(BigVAR)
+library(rugarch)
+library(dplyr)
+library(FinTS)
+library(quantmod)
+library(ggplot2)
+library(tseries)
+library(PerformanceAnalytics)
+library(vars)
+library(zoo)
+
+
+data_series <- read.csv("data/Series Merged.csv") %>% dplyr::mutate(Date = as.Date(Date)) %>% na.omit()
+data_series_zoo <- zoo(data_series[,3:ncol(data_series)], as.Date(data_series$Date))
+data_series_whole <- data_series_zoo[,c("FYFY", "BTC.Ret", "SP500.Ret", "FTSE.Ret", "US13W.Ret", "VIX.Ret", "DPI", "WTI", "D.JONES.RE", "US1Y","GLD")]
+
+# Lag select
+max_lag <- VARselect(data_series_whole, lag.max = 12, type = "const")
+max_lag$selection
+
+data_series_whole = as.matrix(data_series_whole)
+
+#constructing regularized VAR model
+model = constructModel(data_series_whole,p=8,struct="Basic",gran=c(50,10))
+results = cv.BigVAR(model)
+```
+
+```{r}
+png(filename="cv_VAR_selection.png", width = 1000, height = 600)
+plot(results)
+dev.off()
+```
+
+
+```{r}
+#extracting model estimates
+results = results@betaPred[,2:89]
+
+reduced_data_series <- data_series_zoo[,c("FYFY","DPI", "WTI", "D.JONES.RE")]
+```
+
+```{r}
+#fitting VAR model on selected series
+var.model <- VAR(reduced_data_series, p = 8, type = "const", season = NULL, exog = NULL)
+summary(var.model)
+
+```
+
+```{r}
+#ARCH test and normality tests
+var.arch <- arch.test(var.model, lags.multi = 12, multivariate.only = TRUE)
+var.arch
+
+Box.test(residuals(var.model)[,1])
+
+var.norm <- normality.test(var.model, multivariate.only = TRUE)
+var.norm
+
+var.cause.DPI <- causality(var.model, cause = "DPI")
+var.cause.DPI
+
+var.cause.WTI <- causality(var.model, cause = "WTI")
+var.cause.WTI
+
+var.cause.D.JONES.RE <- causality(var.model, cause = "D.JONES.RE")
+var.cause.D.JONES.RE
+
+```
+
